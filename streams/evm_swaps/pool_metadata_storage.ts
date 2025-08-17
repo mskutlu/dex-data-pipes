@@ -1,4 +1,4 @@
-import { DatabaseSync, StatementSync } from 'node:sqlite';
+import { DatabaseSync, StatementSync } from '../../src/onchain/sqlite-shim';
 import { uniq } from 'lodash';
 import { DexName, DexProtocol, Network } from './networks';
 import { nullToUndefined } from './util';

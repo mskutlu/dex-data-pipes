@@ -9,13 +9,13 @@ export const CONTRACTS = {
     base: {
       address: '0x33128a8fc17869897dce68ed026d694621f6fdfd',
       block: {
-        number: 18112225,
+        number: 34286278,
       },
     },
     ethereum: {
       address: '0x1f98431c8ad98523631ae4a59f267346ea31f984',
       block: {
-        number: 12369621,
+        number: 22290737,
       },
     },
   },

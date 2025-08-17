@@ -111,7 +111,13 @@ function getSwapEvent(ins: Instruction, block: Block): Traded | null {
   if (logs.length > 1) {
     const hex = Buffer.from(logs[1].message, 'base64').toString('hex');
     // FIXME: Decoding fails on some blocks earlier than 345246630 in some cases, investigate why
-    return whirlpool.events.Traded.decode({ msg: `0x${hex}` });
+    try {
+      return whirlpool.events.Traded.decode({ msg: `0x${hex}` });
+    } catch (err: any) {
+      // Skip events that fail to decode - this happens for older blocks with a different event format
+      //console.debug(`Failed to decode Orca swap event in block ${block.header.number}: ${err.message || 'Unknown error'}`);
+      return null;
+    }
   }
 
   return null;

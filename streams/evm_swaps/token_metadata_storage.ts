@@ -2,7 +2,7 @@ import { Logger } from 'pino';
 import { MulticallAddresses, Network } from './networks';
 import { ethers, JsonRpcProvider } from 'ethers';
 import dotenv from 'dotenv';
-import { DatabaseSync, StatementSync } from 'node:sqlite';
+import { DatabaseSync, StatementSync } from '../../src/onchain/sqlite-shim';
 import * as assert from 'assert';
 
 import { EvmSwap } from './swap_types';

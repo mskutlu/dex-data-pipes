@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { DatabaseSync, StatementSync } from 'node:sqlite';
+import { DatabaseSync, StatementSync } from '../../src/onchain/sqlite-shim';
 import { TokenStorage } from './token-storage';
 import { LaunchLabConfigStorage } from './launchlab-config-storage';
 
