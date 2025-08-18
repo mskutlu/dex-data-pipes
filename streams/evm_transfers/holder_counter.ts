@@ -1,6 +1,6 @@
 import { Logger as PinoLogger } from 'pino';
 import { Erc20Transfer } from './evm_transfers_stream';
-import { DatabaseSync, StatementSync } from '../../src/onchain/sqlite-shim';
+import { DatabaseSync, StatementSync } from 'node:sqlite';
 import { HolderCounterState } from './holder_counter_types';
 
 export type Logger = PinoLogger;

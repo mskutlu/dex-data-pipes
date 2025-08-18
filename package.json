@@ -3,7 +3,6 @@
     "@biomejs/biome": "^1.9.4",
     "@subsquid/evm-typegen": "^4.3.0",
     "@subsquid/solana-typegen": "^0.4.0",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/lodash": "^4",
     "@types/node": "^22.13.1",
     "csv-parse": "^5.6.0",
@@ -12,12 +11,6 @@
     "vitest": "^3.0.9"
   },
   "packageManager": "yarn@4.5.1",
-  "scripts": {
-    "start:ethereum": "DB_PATH=./metadata/ethereum-pools.sqlite BLOCK_FROM=22290737 ts-node pipes/evm/swaps/cli.ts",
-    "start:base": "DB_PATH=./metadata/base-pools.sqlite BLOCK_FROM=29102278 NETWORK=base ts-node pipes/evm/swaps/cli.ts",
-    "start:solana": "DB_PATH=./metadata/solana-meta.sqlite BLOCK_FROM=345246630 CACHE_DUMP_PATH=./cache/solana-cache.jsonl ts-node pipes/solana/swaps/cli.ts",
-    "start": "concurrently 'yarn:start:*'"
-  },
   "dependencies": {
     "@clickhouse/client": "^1.10.1",
     "@sqd-pipes/core": "0.0.1-alpha.5",
@@ -25,8 +18,6 @@
     "@subsquid/evm-abi": "^0.3.1",
     "@subsquid/evm-codec": "^0.3.0",
     "@subsquid/solana-stream": "1.0.0-portal-api.da1f68",
-    "better-sqlite3": "^12.2.0",
-    "concurrently": "^9.2.0",
     "decimal.js": "^10.6.0",
     "dotenv": "^16.5.0",
     "ethers": "^6.14.1",
