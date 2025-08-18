@@ -32,7 +32,12 @@ export class LaunchLabConfigStorage {
     }
     const config = this.configByAcc.get(account);
     if (!config) {
-      throw new Error(`Raydium LaunchLab config not found by address: ${account}!`);
+      //console.warn(`Raydium LaunchLab config not found by address: ${account}, using default ConstantProduct curve type`);
+      // Return a default configuration with ConstantProduct curve type
+      return {
+        account,
+        curveType: 0 // ConstantProduct curve type
+      };
     }
     return config;
   }

@@ -35,7 +35,7 @@ async function main() {
     state: new ClickhouseState(clickhouse, {
       database: process.env.CLICKHOUSE_DB,
       table: `sync_status`,
-      id: `swaps${!!process.env.BLOCK_TO ? '-pools' : ''}`,
+      id: `${config.network}_swaps`,
       onRollback: async ({ state, latest }) => {
         if (!latest.timestamp) {
           return; // fresh table
