@@ -48,7 +48,7 @@ async function main() {
     state: new ClickhouseState(clickhouse, {
       database: process.env.CLICKHOUSE_DB,
       table: `sync_status`,
-      id: `swaps`,
+      id: `solana_swaps`,
       onRollback: async ({ state, latest }) => {
         if (!latest.timestamp) {
           return; // fresh table

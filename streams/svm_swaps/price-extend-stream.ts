@@ -71,28 +71,61 @@ export class PriceExtendStream {
     const bestPoolTimeInterval = 14 * 24 * 60 * 60 * 1000; // 2 weeks
     // Get latest prices for each token, based on pool chosen from
     // `tokens_with_best_quote_pools` (if exist) or ANY quote pool otherwise.
-    const result = await this.client.query({
-      query: `
-          SELECT
-            token,
-            pool_address,
-            best_pool_address,
-            price_usdc
-          FROM tokens_with_last_prices(
-            min_timestamp={minTimestamp:DateTime},
-            max_timestamp={maxTimestamp:DateTime}
-          )
-      `,
-      query_params: {
-        minTimestamp: new Date(bestPoolMaxDate.getTime() - bestPoolTimeInterval),
-        maxTimestamp: bestPoolMaxDate,
-      },
-      format: 'JSONEachRow',
-    });
+    
+    let attempt = 1;
+    const maxAttempts = 3;
+    
+    while (true) {
+      try {
+        const result = await this.client.query({
+          query: `
+            SELECT
+              token,
+              pool_address,
+              best_pool_address,
+              price_usdc
+            FROM tokens_with_last_prices(
+              min_timestamp={minTimestamp:DateTime},
+              max_timestamp={maxTimestamp:DateTime}
+            )
+        `,
+          query_params: {
+            minTimestamp: new Date(bestPoolMaxDate.getTime() - bestPoolTimeInterval),
+            maxTimestamp: bestPoolMaxDate,
+          },
+          format: 'JSONEachRow',
+        });
 
-    for await (const rows of result.stream<TokenPriceDbRow>()) {
-      for (const row of rows) {
-        yield row.json();
+        for await (const rows of result.stream<TokenPriceDbRow>()) {
+          for (const row of rows) {
+            yield row.json();
+          }
+        }
+        break; // Success, exit retry loop
+      } catch (err) {
+        this.logger.error(
+          err,
+          `Error fetching token prices for date: ${bestPoolMaxDate.toISOString()}`,
+        );
+
+        if (
+          err instanceof Error &&
+          'code' in err &&
+          (err.code === 'ECONNRESET' || err.code === 'EPIPE' || err.code === 'ETIMEDOUT')
+        ) {
+          ++attempt;
+          if (attempt > maxAttempts) {
+            this.logger.error('Max retry attempts reached for fetching token prices.');
+            throw err;
+          } else {
+            this.logger.info(
+              `Socket error detected. Waiting 2s before retry ${attempt}/${maxAttempts}...`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            continue;
+          }
+        }
+        throw err;
       }
     }
   }
@@ -121,35 +154,67 @@ export class PriceExtendStream {
 
   private async *refetchPositions(accounts: string[], fromBlock?: number) {
     for (const accountsChunk of _.chunk(accounts, PRELOAD_ACCOUNT_POSITIONS_BATCH_SIZE)) {
-      const result = await timeIt(
-        this.logger,
-        'Fetching account positions chunk',
-        () =>
-          this.client.query({
-            query: `SELECT
-              account,
-              token_a,
-              token_b,
-              amount_a,
-              amount_b,
-              token_a_usdc_price,
-              token_b_usdc_price
-            FROM
-              account_token_positions
-            WHERE
-              sign > 0
-              AND account IN {accounts:Array(String)}
-              ${fromBlock ? 'AND block_number >= {fromBlock:UInt32}' : ''}
-            ORDER BY (account, block_number, transaction_index, instruction_address) ASC`,
-            query_params: { accounts: accountsChunk, fromBlock },
-            format: 'JSONEachRow',
-          }),
-        { chunkSize: accountsChunk.length },
-      );
+      let attempt = 1;
+      const maxAttempts = 3;
+      
+      while (true) {
+        try {
+          const result = await timeIt(
+            this.logger,
+            `Fetching account positions chunk (attempt ${attempt}/${maxAttempts})`,
+            () =>
+              this.client.query({
+                query: `SELECT
+                  account,
+                  token_a,
+                  token_b,
+                  amount_a,
+                  amount_b,
+                  token_a_usdc_price,
+                  token_b_usdc_price
+                FROM
+                  account_token_positions
+                WHERE
+                  sign > 0
+                  AND account IN {accounts:Array(String)}
+                  ${fromBlock ? 'AND block_number >= {fromBlock:UInt32}' : ''}
+                ORDER BY (account, block_number, transaction_index, instruction_address) ASC`,
+                query_params: { accounts: accountsChunk, fromBlock },
+                format: 'JSONEachRow',
+              }),
+            { chunkSize: accountsChunk.length },
+          );
 
-      for await (const rows of result.stream<DbSwap>()) {
-        for (const row of rows) {
-          yield row.json();
+          for await (const rows of result.stream<DbSwap>()) {
+            for (const row of rows) {
+              yield row.json();
+            }
+          }
+          break; // Success, exit retry loop
+        } catch (err) {
+          this.logger.error(
+            err,
+            `Error fetching account positions for ${accountsChunk.length} accounts`,
+          );
+
+          if (
+            err instanceof Error &&
+            'code' in err &&
+            (err.code === 'ECONNRESET' || err.code === 'EPIPE' || err.code === 'ETIMEDOUT')
+          ) {
+            ++attempt;
+            if (attempt > maxAttempts) {
+              this.logger.error('Max retry attempts reached for fetching account positions.');
+              throw err;
+            } else {
+              this.logger.info(
+                `Socket error detected. Waiting 2s before retry ${attempt}/${maxAttempts}...`,
+              );
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+              continue;
+            }
+          }
+          throw err;
         }
       }
     }

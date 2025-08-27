@@ -1,4 +1,8 @@
 <clickhouse>
+    <!-- Allow connections from all network interfaces -->
+    <listen_host>::</listen_host>
+    <listen_host>0.0.0.0</listen_host>
+    
    <users>
         <default>
             <max_memory_usage>10000000000</max_memory_usage>
