@@ -106,36 +106,9 @@ export class PriceExtendStream {
       },
     );
 
-        for await (const rows of result.stream<TokenPriceDbRow>()) {
-          for (const row of rows) {
-            yield row.json();
-          }
-        }
-        break; // Success, exit retry loop
-      } catch (err) {
-        this.logger.error(
-          err,
-          `Error fetching token prices for date: ${bestPoolMaxDate.toISOString()}`,
-        );
-
-        if (
-          err instanceof Error &&
-          'code' in err &&
-          (err.code === 'ECONNRESET' || err.code === 'EPIPE' || err.code === 'ETIMEDOUT')
-        ) {
-          ++attempt;
-          if (attempt > maxAttempts) {
-            this.logger.error('Max retry attempts reached for fetching token prices.');
-            throw err;
-          } else {
-            this.logger.info(
-              `Socket error detected. Waiting 2s before retry ${attempt}/${maxAttempts}...`,
-            );
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            continue;
-          }
-        }
-        throw err;
+    for await (const rows of result.stream<TokenPriceDbRow>()) {
+      for (const row of rows) {
+        yield row.json();
       }
     }
   }
@@ -191,36 +164,9 @@ export class PriceExtendStream {
         { chunkSize: accountsChunk.length },
       );
 
-          for await (const rows of result.stream<DbSwap>()) {
-            for (const row of rows) {
-              yield row.json();
-            }
-          }
-          break; // Success, exit retry loop
-        } catch (err) {
-          this.logger.error(
-            err,
-            `Error fetching account positions for ${accountsChunk.length} accounts`,
-          );
-
-          if (
-            err instanceof Error &&
-            'code' in err &&
-            (err.code === 'ECONNRESET' || err.code === 'EPIPE' || err.code === 'ETIMEDOUT')
-          ) {
-            ++attempt;
-            if (attempt > maxAttempts) {
-              this.logger.error('Max retry attempts reached for fetching account positions.');
-              throw err;
-            } else {
-              this.logger.info(
-                `Socket error detected. Waiting 2s before retry ${attempt}/${maxAttempts}...`,
-              );
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-              continue;
-            }
-          }
-          throw err;
+      for await (const rows of result.stream<DbSwap>()) {
+        for (const row of rows) {
+          yield row.json();
         }
       }
     }
