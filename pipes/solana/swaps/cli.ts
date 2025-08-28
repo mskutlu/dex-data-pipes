@@ -1,11 +1,11 @@
 import path from 'path';
 import { ClickhouseState } from '@sqd-pipes/core';
 import { createClickhouseClient, ensureTables, toUnixTime } from '../../clickhouse';
-import { createLogger } from '../../utils';
+import { chRetry, createLogger } from '../../utils';
 import { getConfig } from './config';
-import { SolanaSwapsStream } from '../../../streams/svm_swaps';
-import { PriceExtendStream } from '../../../streams/svm_swaps/price-extend-stream';
-import { asDecimalString, timeIt } from '../../../streams/svm_swaps/utils';
+import { SolanaSwapsStream } from '../../../streams/solana/swaps-stream';
+import { PriceExtendStream } from '../../../streams/solana/price-extend-stream';
+import { asDecimalString, timeIt } from '../../../streams/solana/utils';
 
 const config = getConfig();
 
@@ -65,20 +65,19 @@ async function main() {
 
   const stream = await ds.stream();
   for await (const swaps of stream.pipeThrough(
-    await new PriceExtendStream(clickhouse, config.cacheDumpPath).pipe(),
+    await new PriceExtendStream({
+      clickhouse,
+      cacheDumpPath: config.cacheDumpPath,
+      cacheDumpIntervalBlocks: config.cacheDumpIntervalBlocks,
+    }).pipe(),
   )) {
     await timeIt(
       logger,
       `Inserting swaps to Clickhouse`,
       async () => {
-        let attempt = 1;
-        const maxAttempts = 3;
-        while (true) {
-          logger.debug(
-            `Trying to insert ${swaps.length} to Clickhouse (attempt ${attempt}/${maxAttempts})`,
-          );
-          try {
-            await clickhouse.insert({
+        await chRetry(
+          () =>
+            clickhouse.insert({
               table: `solana_swaps_raw`,
               values: swaps.map((s) => {
                 const obj = {
@@ -114,8 +113,8 @@ async function main() {
                   token_a_pricing_pool: s.baseToken.usdcPricingPool?.address || '',
                   token_b_pricing_pool: s.quoteToken.usdcPricingPool?.address || '',
                   // Token issuances
-                  token_a_issuance: s.baseToken.issuance || 0,
-                  token_b_issuance: s.quoteToken.issuance || 0,
+                  token_a_issuance: s.baseToken.issuance?.toString() || 0,
+                  token_b_issuance: s.quoteToken.issuance?.toString() || 0,
                   // Trader stats
                   token_a_balance: s.baseToken.balance,
                   token_b_balance: s.quoteToken.balance,
@@ -146,28 +145,9 @@ async function main() {
                 return obj;
               }),
               format: 'JSONEachRow',
-            });
-            break;
-          } catch (err) {
-            logger.error(err, `Error while trying to insert ${swaps.length} swaps to Clickhouse!`);
-
-            if (
-              err instanceof Error &&
-              'code' in err &&
-              (err.code === 'ECONNRESET' || err.code === 'EPIPE')
-            ) {
-              ++attempt;
-              if (attempt > maxAttempts) {
-                logger.error('Max Clickhouse insert retry attempts reached.');
-              } else {
-                logger.info('Socket error detected. Retrying the insert...');
-                continue;
-              }
-            }
-
-            throw err;
-          }
-        }
+            }),
+          { logger, desc: `Insert ${swaps.length} swaps to Clickhouse` },
+        );
         await ds.ack();
       },
       {
