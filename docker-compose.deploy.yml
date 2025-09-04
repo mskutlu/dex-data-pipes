@@ -1,0 +1,87 @@
+services:
+  ethereum-swaps:
+    build: .
+    container_name: dex_ethereum_swaps
+    environment:
+      - NETWORK=ethereum
+      - DB_PATH=./metadata/ethereum-pools.sqlite
+      - BLOCK_FROM=${ETHEREUM_BLOCK_FROM:-22290737}
+      - CLICKHOUSE_URL=${CLICKHOUSE_URL:-http://localhost:8123}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-Sakirs1234**}
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-default}
+      - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL:-https://eth-mainnet.g.alchemy.com/v2/fZz8D-jlyjZUBoXjPgttkStZFRzmRTwC}
+    volumes:
+      - ./metadata:/opt/sqdgn-pipes/metadata
+      - ./cache:/opt/sqdgn-pipes/cache
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - ethereum
+      - all
+    networks:
+      - default
+
+  base-swaps:
+    build: .
+    container_name: dex_base_swaps
+    environment:
+      - NETWORK=base
+      - DB_PATH=./metadata/base-pools.sqlite
+      - BLOCK_FROM=${BASE_BLOCK_FROM:-29102278}
+      - CLICKHOUSE_URL=${CLICKHOUSE_URL:-http://localhost:8123}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-Sakirs1234**}
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-default}
+      - BASE_RPC_URL=${BASE_RPC_URL:-https://base-mainnet.g.alchemy.com/v2/fZz8D-jlyjZUBoXjPgttkStZFRzmRTwC}
+    volumes:
+      - ./metadata:/opt/sqdgn-pipes/metadata
+      - ./cache:/opt/sqdgn-pipes/cache
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - base
+      - all
+    networks:
+      - default
+
+  solana-swaps:
+    build: .
+    container_name: dex_solana_swaps
+    environment:
+      - NETWORK=solana
+      - DB_PATH=./metadata/solana-meta.sqlite
+      - BLOCK_FROM=${SOLANA_BLOCK_FROM:-345246630}
+      - CACHE_DUMP_PATH=./cache/solana-cache.jsonl
+      - CLICKHOUSE_URL=${CLICKHOUSE_URL:-http://localhost:8123}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-Sakirs1234**}
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-default}
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL:-https://solana-mainnet.g.alchemy.com/v2/fZz8D-jlyjZUBoXjPgttkStZFRzmRTwC}
+    volumes:
+      - ./metadata:/opt/sqdgn-pipes/metadata
+      - ./cache:/opt/sqdgn-pipes/cache
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - solana
+      - all
+    networks:
+      - default
+
+networks:
+  default:
+    external: true
+    name: dex-data-pipes_default
