@@ -78,18 +78,18 @@ export class PriceExtendStream {
 
   private async *refetchTokenPrices(bestPoolMaxDate: Date) {
     const bestPoolTimeInterval = 14 * 24 * 60 * 60 * 1000; // 2 weeks
-    // Get latest prices for each token, based on pool chosen from
+    // Get latest prices for each token, based on best 14d pool chosen from
     // `tokens_with_best_quote_pools` (if exist) or ANY quote pool otherwise.
     const result = await chRetry(
       () =>
         this.client.query({
           query: `
-          SELECT
-            token,
-            pool_address,
-            best_pool_address,
-            price_usdc
-          FROM tokens_with_last_prices(
+            SELECT
+              token,
+              pool_address,
+              best_pool_address,
+              price_usdc
+          FROM tokens_with_last_best_pool_prices(
             min_timestamp={minTimestamp:DateTime},
             max_timestamp={maxTimestamp:DateTime}
           )
@@ -173,10 +173,11 @@ export class PriceExtendStream {
   }
 
   private loadTokenPosition(swap: DbSwap) {
+    // We only handle tokenA positions for now
     const positionsA = this.accountPositions.getOrCreateTokenPositions(swap.account, swap.token_a);
-    const positionsB = this.accountPositions.getOrCreateTokenPositions(swap.account, swap.token_b);
+    // const positionsB = this.accountPositions.getOrCreateTokenPositions(swap.account, swap.token_b);
     positionsA.load(swap, swap.token_a);
-    positionsB.load(swap, swap.token_b);
+    // positionsB.load(swap, swap.token_b);
   }
 
   // Convert SwappedTokenData to a ExtendedSwappedTokenData
