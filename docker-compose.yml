@@ -3,14 +3,14 @@ volumes:
 
 services:
   ch:
-    image: bitnami/clickhouse:latest
+    image: clickhouse:25.7.8.71
     container_name: jelly_ch
     ports:
       - "0.0.0.0:8123:8123"  # Bind to all interfaces for external access
       - "0.0.0.0:9000:9000"  # Native protocol port
     environment:
-      - CLICKHOUSE_ADMIN_USER=default
-      - CLICKHOUSE_ADMIN_PASSWORD=Sakirs1234**  # Change this to your secure password
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=Sakirs1234**  # Change this to your secure password
     volumes:
       - clickhouse-db:/bitnami/clickhouse
       - ./local/clickhouse/config.xml:/opt/bitnami/clickhouse/etc/conf.d/config.xml

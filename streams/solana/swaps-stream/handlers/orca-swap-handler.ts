@@ -126,7 +126,12 @@ function getSwapEvent(ins: Instruction, block: Block, version?: whirlpool.Versio
   if (logs.length > 1) {
     const hex = Buffer.from(logs[1].message, 'base64').toString('hex');
     // FIXME: Decoding fails on some blocks earlier than 345246630 in some cases, investigate why
-    return whirlpool[version].events.Traded.decode({ msg: `0x${hex}` });
+    try {
+      return whirlpool[version].events.Traded.decode({ msg: `0x${hex}` });
+    } catch (err) {
+      // Silently skip events that fail to decode (known issue with older blocks)
+      return null;
+    }
   }
 
   return null;
